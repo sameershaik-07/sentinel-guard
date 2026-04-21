@@ -1,26 +1,602 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ─── Typography ───────────────────────────────────────────── */
+/* Wire the next/font CSS variable into Tailwind's font-sans   */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html,
+body {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+
+/* ═══════════════════════════════════════════════════════════════
+   KEYFRAME ANIMATIONS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Horizontal shine sweep — use on skeleton loaders & buttons */
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Soft pulsing glow on box-shadow — use on critical cards */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+/* Slide + fade in from below — use on cards appearing */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Shifting gradient angle — use on title text & accents */
+@keyframes gradient-shift {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+/* Slow horizontal drift for count-up text reveal */
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Scan-line crawl — use on terminal / log panels */
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Terminal block cursor blink */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── .glass-card ──────────────────────────────────────────────
+   Glassmorphism surface: frosted blur, translucent bg, glowing border.
+   Add hover variant for interactive cards.                       */
+.glass-card {
+  background: var(--color-slate-900, #0f172a);
+  border: 1px solid var(--color-slate-800, #1e293b);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--color-slate-700, #334155);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+.glass-card-danger:hover {
+  border-color: var(--color-rose-500, #f43f5e);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 0 8px 0 rgba(244, 63, 94, 0.15);
+}
+
+
+/* ── .scrollbar-styled ────────────────────────────────────────
+   Thin, branded dark scrollbar for any scrollable container.    */
+.scrollbar-styled {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.scrollbar-styled::-webkit-scrollbar       { width: 4px; }
+.scrollbar-styled::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-styled::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong);
+  border-radius: 99px;
+}
+.scrollbar-styled::-webkit-scrollbar-thumb:hover {
+  background-color: var(--cyan-600);
+}
+
+
+/* ── .glow-text ───────────────────────────────────────────────
+   Animated gradient shimmer across text — hero titles & headings.*/
+.glow-text {
+  background: linear-gradient(
+    270deg,
+    var(--cyan-300),
+    #a78bfa,       /* violet */
+    var(--cyan-400),
+    #38bdf8        /* sky    */
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 6s ease infinite;
+}
+
+
+/* ── Severity badge helpers ───────────────────────────────────
+   Composable severity classes used by VulnerabilityList etc.    */
+.badge-critical {
+  background: var(--red-dim);
+  color: var(--red-400);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+.badge-high {
+  background: var(--orange-dim);
+  color: var(--orange-400);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+}
+.badge-medium {
+  background: var(--yellow-dim);
+  color: var(--yellow-400);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+}
+.badge-low {
+  background: rgba(6, 182, 212, 0.10);
+  color: var(--cyan-400);
+  border: 1px solid rgba(6, 182, 212, 0.22);
+}
+
+
+/* ── .animate-fade-in-up ──────────────────────────────────────
+   Ready-to-use animation class for staggered card entrances.    */
+.animate-fade-in-up {
+  animation: fade-in-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+
+/* ── .shimmer-bar ─────────────────────────────────────────────
+   Branded skeleton shimmer — cyan/blue branded sweep.           */
+.shimmer-bar {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  border-radius: 6px;
+}
+.shimmer-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(6, 182, 212, 0.12) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN TOKENS  —  Sentinel-Guard Color System
+   All tokens live on :root so they cascade everywhere.
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+
+  /* ── Backgrounds (Darktrace Deep Navy & Black) ─────────────────────────── */
+  --bg-base:        #060B12;   /* Deepest layer — near black    */
+  --bg-surface:     #0D1623;   /* Cards, panels                */
+  --bg-elevated:    #162335;   /* Hover states, nested cards   */
+  --bg-overlay:     #080E18;   /* Modals, tooltips             */
+
+  /* ── Borders ─────────────────────────────────────────────── */
+  --border-subtle:  #14253A;   /* almost invisible divider          */
+  --border-default: #1B324D;   /* standard card border              */
+  --border-strong:  #294B73;   /* focused / highlighted border      */
+  --border-accent:  #1ACF97;   /* active state accent border        */
+
+  /* ── Accent — Cyan (primary actions, links, info) ────────── */
+  --cyan-50:        #e0ffe6;
+  --cyan-100:       #b3ffce;
+  --cyan-300:       #38f5a6;
+  --cyan-400:       #1ACF97;   /* Darktrace Neon Green */
+  --cyan-500:       #0DB17D;   /* Darktrace Deep Green */
+  --cyan-600:       #0A8D63;   /* Darktrace Darker Green */
+
+  /* ── Accent — Red  (critical, danger) ───────────────────── */
+  --red-400:        #FF3366;   /* Sharper Red */
+  --red-500:        #F02859;
+  --red-600:        #D6214E;
+  --red-dim:        rgba(255, 51, 102, 0.12);
+
+  /* ── Accent — Green (secure, success) ───────────────────── */
+  --green-400:      #1ACF97;   
+  --green-500:      #0DB17D;
+  --green-dim:      rgba(26, 207, 151, 0.12);
+
+  /* ── Accent — Orange (high severity) ────────────────────── */
+  --orange-400:     #FF8C00;
+  --orange-500:     #F07C00;
+  --orange-dim:     rgba(255, 140, 0, 0.12);
+
+  /* ── Accent — Yellow (medium severity) ──────────────────── */
+  --yellow-400:     #FFC800;
+  --yellow-500:     #E6B400;
+  --yellow-dim:     rgba(255, 200, 0, 0.12);
+
+  /* ── Neutral Text ────────────────────────────────────────── */
+  --text-primary:   #F8F9FA;
+  --text-secondary: #B1B8C0;
+  --text-muted:     #6D7681;
+  --text-disabled:  #454C54;
+
+  /* ── Glow Box-Shadows ────────────────────────────────────── */
+  /*    Replace soft shadows with neon edge glows              */
+  --glow-cyan:      0 0 16px -2px rgba(26, 207, 151, 0.4),
+                    0 0 8px -2px rgba(26, 207, 151, 0.2);
+
+  --glow-cyan-sm:   0 0 8px 0 rgba(26, 207, 151, 0.2),
+                    0 0 4px 0 rgba(26, 207, 151, 0.1);
+
+  --glow-red:       0 0 16px -2px rgba(255, 51, 102, 0.4),
+                    0 0 8px -2px rgba(255, 51, 102, 0.2);
+
+  --glow-red-sm:    0 0 8px 0 rgba(255, 51, 102, 0.2),
+                    0 0 4px 0 rgba(255, 51, 102, 0.1);
+
+  --glow-green:     0 4px 6px -1px rgba(34, 197, 94, 0.1),
+                    0 2px 4px -2px rgba(34, 197, 94, 0.1);
+
+  --glow-green-sm:  0 1px 3px 0 rgba(34, 197, 94, 0.1),
+                    0 1px 2px 0 rgba(34, 197, 94, 0.06);
+
+  --glow-orange:    0 4px 6px -1px rgba(249, 115, 22, 0.1),
+                    0 2px 4px -2px rgba(249, 115, 22, 0.1);
+
+  --glow-yellow:    0 4px 6px -1px rgba(234, 179, 8, 0.1),
+                    0 2px 4px -2px rgba(234, 179, 8, 0.1);
+
+  --glow-white:     0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                    0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   LAYOUT BACKGROUND SYSTEM
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Base body background — deep navy, not pure black */
+.app-bg {
+  background-color: var(--bg-base);
+  position: relative;
+}
+
+/* ── Radial glow blooms ───────────────────────────────────────
+   Two soft light sources fixed to the viewport:
+   • Top-left  → cyan  (primary accent)
+   • Top-right → violet (secondary warmth)
+   These never scroll, giving constant ambient depth.           */
+.app-glow-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 50% at 10% 0%,
+      rgba(26, 207, 151, 0.05) 0%, /* subtle neon green */
+      transparent 65%),
+    radial-gradient(ellipse 55% 45% at 90% 5%,
+      rgba(10, 141, 99, 0.04) 0%, /* darktrace deeper green */
+      transparent 60%),
+    radial-gradient(ellipse 40% 30% at 50% 100%,
+      rgba(26, 207, 151, 0.02) 0%, /* subtle neon green */
+      transparent 70%);
+}
+
+/* ── Dot-grid overlay ─────────────────────────────────────────
+   A fixed SVG dot pattern that gives the "command centre" look.
+   Opacity is intentionally very low so it reads as texture,
+   not a distracting foreground element.                        */
+.app-grid-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: radial-gradient(
+    circle,
+    rgba(100, 130, 180, 0.25) 1px,
+    transparent 1px
+  );
+  background-size: 28px 28px;
+  /* Vignette fade — dots disappear at edges for a polished feel */
+  mask-image: radial-gradient(
+    ellipse 85% 85% at 50% 50%,
+    black 40%,
+    transparent 100%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 85% 85% at 50% 50%,
+    black 40%,
+    transparent 100%
+  );
+}
+
+/* Ensure all real content sits above the background layers */
+body > *:not(.app-glow-layer):not(.app-grid-layer) {
+  position: relative;
+  z-index: 1;
+}
+
+
+/* ── Sidebar grain texture (Step 2.4) ────────────────────────
+   A barely-visible SVG noise pattern rendered behind sidebar content.
+   Uses a ::before pseudo-element so it never affects layout.   */
+.sidebar-texture {
+  isolation: isolate;
+}
+.sidebar-texture::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px 180px;
+}
+/* Push all sidebar children above the grain layer */
+.sidebar-texture > * {
+  position: relative;
+  z-index: 1;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   URL FORM — Segment 4 utilities
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Step 4.3 — Rotating scan-border animation
+   Wrap the <form> with position:relative; give it this class when
+   loading. A conic-gradient pseudo-element spins behind the card.  */
+@keyframes spin-conic {
+  to { transform: rotate(360deg); }
+}
+
+.form-scan-border {
+  position: relative;
+  z-index: 0;
+}
+.form-scan-border::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: 15px;
+  background: conic-gradient(
+    from 0deg,
+    transparent  0deg,
+    var(--cyan-400) 60deg,
+    transparent 120deg,
+    transparent 360deg
+  );
+  animation: spin-conic 2s linear infinite;
+  z-index: -1;
+  opacity: 0.9;
+}
+/* Mask the inner area so only the border shows */
+.form-scan-border::after {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  border-radius: 13px;
+  background: var(--bg-surface);
+  z-index: -1;
+}
+
+/* Step 4.2 — Input focus glow */
+.url-input {
+  width: 100%;
+  background: rgba(3, 6, 15, 0.80);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  color: var(--text-primary);
+  padding: 1rem 1rem 1rem 3rem;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+}
+.url-input::placeholder {
+  color: var(--text-disabled);
+}
+.url-input:focus {
+  border-color: var(--cyan-500);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15), var(--glow-cyan-sm);
+}
+.url-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Step 4.3 — Scanning progress bar */
+@keyframes scan-indeterminate {
+  0%   { left: -40%; width: 40%; }
+  60%  { left: 100%; width: 40%; }
+  100% { left: 100%; width: 40%; }
+}
+.scan-progress-track {
+  position: relative;
+  height: 2px;
+  border-radius: 99px;
+  background: var(--border-subtle);
+  overflow: hidden;
+}
+.scan-progress-fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, var(--cyan-400), var(--cyan-300), transparent);
+  animation: scan-indeterminate 1.6s ease-in-out infinite;
+  box-shadow: var(--glow-cyan-sm);
+}
+
+/* Step 4.4 — Gradient shimmer button */
+.btn-gradient {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #fff;
+  white-space: nowrap;
+  min-width: 150px;
+  background: linear-gradient(135deg, var(--cyan-500) 0%, #3b82f6 60%, #6366f1 100%);
+  box-shadow: 0 4px 20px rgba(6, 182, 212, 0.25);
+  border: none;
+  cursor: pointer;
+  transition: box-shadow 0.25s ease, transform 0.15s ease, opacity 0.2s ease;
+}
+.btn-gradient:hover {
+  box-shadow: 0 6px 28px rgba(6, 182, 212, 0.40), var(--glow-cyan-sm);
+  transform: translateY(-1px);
+}
+.btn-gradient:active {
+  transform: translateY(0);
+}
+.btn-gradient:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+/* Shimmer sweep overlay */
+.btn-gradient::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  transition: transform 0s;
+}
+.btn-gradient:hover::after {
+  transform: translateX(100%);
+  transition: transform 0.55s ease;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   VULNERABILITY LIST — Segment 6 utilities
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Step 6.2 — Pulsing red glow for Critical severity cards */
+@keyframes critical-glow-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      0 4px 24px rgba(0,0,0,0.35),
+      0 0  8px rgba(239, 68, 68, 0.20);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      0 4px 24px rgba(0,0,0,0.35),
+      0 0 22px rgba(239, 68, 68, 0.55),
+      0 0 44px rgba(239, 68, 68, 0.18);
+  }
+}
+
+.vuln-card-critical {
+  animation: critical-glow-pulse 2.8s ease-in-out infinite;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SIMULATED LOGS — Segment 7 utilities
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Step 7.1 — Terminal panel container */
+.terminal-panel {
+  background: #01030a;   /* true near-black, darker than app bg */
+  border-radius: 10px;
+  position: relative;
+}
+
+/* Step 7.1 — CRT scanline overlay
+   A very faint repeating horizontal band every 4px.             */
+.terminal-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent            0px,
+    transparent            3px,
+    rgba(0, 0, 0, 0.09)   3px,
+    rgba(0, 0, 0, 0.09)   4px
+  );
+}
+
+/* Step 7.3 — Typewriter clip-path animation
+   clip-path: inset(0 100% 0 0) hides the element by clipping
+   100% from the right. Animating to inset(0 0% 0 0) reveals it
+   left-to-right in a typewriter style. Works on multi-line text. */
+@keyframes typing {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0   0% 0 0); }
+}
+
+.log-typing {
+  animation: typing 0.55s steps(28, end) both;
+}
+
+/* Step 7.2 — Log entry base styles (border applied inline per type) */
+.log-entry {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.025);
+  transition: background 0.15s ease;
+}
+.log-entry:hover {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+/* Step 7.4 — Jump-to-latest button */
+.btn-jump-latest {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid rgba(6, 182, 212, 0.30);
+  background: rgba(6, 182, 212, 0.10);
+  color: var(--cyan-300);
+  box-shadow: var(--glow-cyan-sm);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+  animation: fade-in-up 0.2s ease both;
+}
+.btn-jump-latest:hover {
+  background: rgba(6, 182, 212, 0.20);
+  box-shadow: var(--glow-cyan);
 }
