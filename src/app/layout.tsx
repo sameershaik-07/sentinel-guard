@@ -43,7 +43,7 @@ export default function RootLayout({
                 </svg>
                 <span>shaiksameer999</span>
               </a>
-              <a href="mailto:your_email@example.com" className="flex items-center gap-1.5 hover:text-[var(--cyan-400)] transition-colors">
+              <a href="mailto:sameer.004shaik@gmail.com" className="flex items-center gap-1.5 hover:text-[var(--cyan-400)] transition-colors">
                 <Mail className="w-4 h-4" />
                 <span>Contact</span>
               </a>
