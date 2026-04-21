@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <div class="mermaid">
+graph TD
+    Internet["Internet / Attacker"]
+    Firewall["Cloud WAF / Gateway"]
+    LoadBalancer["Load Balancer HTTPS"]
+    AppServerA["Web App A: example.com"]
+    AppServerB["Internal Web App B"]
+    Database["Internal Database / Storage"]
+    Identity["IAM / Service Principal"]
+    Internet -->|Standard Traffic| Firewall
+    Firewall -->|Filtered| LoadBalancer
+    LoadBalancer -->|Port 443| AppServerA
+    AppServerA -->|Private IP| Database
+    AppServerA -->|Assuming Role| Identity
+    AppServerA -->|Same VNet (Isolated)| AppServerB
+    AppServerB -->|Private IP| Database
+    classDef secure fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#f8fafc;
+    classDef warning fill:#451a03,stroke:#f97316,stroke-width:2px,color:#fed7aa;
+    classDef critical fill:#450a0a,stroke:#ef4444,stroke-width:2px,color:#fecaca;
+    class Internet secure;
+    click Internet call handleMermaidClick() "Investigate Internet"
+    class Firewall secure;
+    click Firewall call handleMermaidClick() "Investigate Firewall"
+    class LoadBalancer secure;
+    click LoadBalancer call handleMermaidClick() "Investigate LoadBalancer"
+    class AppServerA secure;
+    click AppServerA call handleMermaidClick() "Investigate AppServerA"
+    class AppServerB secure;
+    click AppServerB call handleMermaidClick() "Investigate AppServerB"
+    class Database secure;
+    click Database call handleMermaidClick() "Investigate Database"
+    class Identity secure;
+    click Identity call handleMermaidClick() "Investigate Identity"
+  </div>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.14.0/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });
+  </script>
+</body>
+</html>
