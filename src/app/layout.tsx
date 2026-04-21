@@ -23,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} app-bg flex h-screen overflow-hidden font-sans antialiased`}>
+      <body className={`${inter.variable} app-bg flex flex-col h-screen overflow-hidden font-sans antialiased`}>
         {/* Layer 1 — radial glow blooms (fixed, behind everything) */}
         <div className="app-glow-layer" aria-hidden="true" />
         {/* Layer 2 — dot-grid pattern (fixed, above glow) */}
