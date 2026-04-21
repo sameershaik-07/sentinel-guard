@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Shield, Home, History, Settings, Cpu, Menu, X } from "lucide-react";
+import { Shield, Home, History, Cpu, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const navLinks = [
   { href: "/",         label: "Dashboard",   icon: Home     },
   { href: "/history",  label: "Scan History", icon: History  },
-  { href: "/settings", label: "Settings",     icon: Settings },
 ];
 
 function NavLink({ href, label, icon: Icon, isActive, onClick }: {
