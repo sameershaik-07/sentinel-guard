@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   ArrowUp,
 } from "lucide-react";
+import { apiUrl } from "@/lib/runtime-config";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 type LogType = "info" | "warn" | "critical" | "secure";
@@ -77,7 +78,7 @@ export default function SimulatedLogs() {
       if (document.visibilityState === "hidden") return;
 
       try {
-        const res = await fetch("http://localhost:8000/api/logs");
+        const res = await fetch(apiUrl("/api/logs"));
         if (res.ok) {
           setIsError(false);
           const data = await res.json();

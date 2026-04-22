@@ -10,15 +10,17 @@ import AttackMap         from "@/components/AttackMap";
 import SimulatedLogs     from "@/components/SimulatedLogs";
 import TopProgressBar    from "@/components/TopProgressBar";
 import TargetIntelligence from "@/components/TargetIntelligence";
+import { apiUrl } from "@/lib/runtime-config";
+import type { ScanResult } from "@/types/scan";
 
 export default function Home() {
-  const [scanResult, setScanResult] = useState<any>(null);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [error,      setError]      = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [attackMapMode, setAttackMapMode] = useState<"interactive" | "topology">("interactive");
 
   const handleScanStart    = ()       => { setError(null); setScanResult(null); setIsScanning(true);  };
-  const handleScanComplete = (d: any) => { setScanResult(d); setIsScanning(false); };
+  const handleScanComplete = (d: ScanResult) => { setScanResult(d); setIsScanning(false); };
   const handleError        = (e: string) => { setError(e);  setIsScanning(false); };
 
   return (
@@ -39,7 +41,7 @@ export default function Home() {
         {/* Animated gradient title + icon */}
         <div className="flex items-center gap-4 mb-3">
           <div
-            className="flex items-center justify-center w-11 h-11 rounded-xl flex-shrink-0"
+            className="flex items-center justify-center w-11 h-11 rounded-xl shrink-0"
             style={{
               background: "linear-gradient(135deg, rgba(6,182,212,0.18) 0%, rgba(139,92,246,0.14) 100%)",
               border: "1px solid rgba(6,182,212,0.25)",
@@ -100,7 +102,7 @@ export default function Home() {
       {error && (
         <div className="glass-card p-4 flex items-center gap-3"
           style={{ borderColor: "rgba(239,68,68,0.35)", color: "var(--red-400)" }}>
-          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+            <AlertTriangle className="w-5 h-5 shrink-0" />
           <p className="text-sm">{error}</p>
         </div>
       )}
@@ -118,10 +120,10 @@ export default function Home() {
           {/* Step 3.3 — Frontend Download Button */}
           {scanResult.id && (
             <a
-              href={`http://localhost:8000/api/report/${scanResult.id}`}
+              href={apiUrl(`/api/report/${scanResult.id}`)}
               target="_blank"
               rel="noreferrer noopener"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:shadow-[0_0_25px_rgba(6,182,212,0.3)] bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500 w-fit animate-fade-in-up"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:shadow-[0_0_25px_rgba(6,182,212,0.3)] bg-linear-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500 w-fit animate-fade-in-up"
             >
               <Download className="w-4 h-4" />
               Download Executive Report
@@ -149,7 +151,7 @@ export default function Home() {
           /* Step 9.1 — Branded shimmer skeleton for ScoreCard */
           <div className="col-span-1 glass-card p-6 flex flex-col items-center justify-center gap-5" style={{ minHeight: "20rem" }}>
             {/* Circular ring shimmer */}
-            <div className="relative w-36 h-36 flex-shrink-0">
+            <div className="relative w-36 h-36 shrink-0">
               <div className="shimmer-bar w-full h-full rounded-full" style={{ height: "144px" }} />
               <div
                 className="absolute inset-3 rounded-full flex flex-col items-center justify-center gap-2"
@@ -236,17 +238,17 @@ export default function Home() {
             {/* Shimmer bars mimicking a graph */}
             <div className="w-full space-y-4 px-4 opacity-60">
               <div className="flex items-center gap-4">
-                <div className="shimmer-bar w-10 h-10 rounded-full flex-shrink-0" />
+                <div className="shimmer-bar w-10 h-10 rounded-full shrink-0" />
                 <div className="shimmer-bar h-3 flex-1 rounded-full" />
               </div>
               <div className="flex items-center gap-4 pl-12">
-                <div className="shimmer-bar h-px w-8 flex-shrink-0" style={{ background: "var(--border-default)" }} />
-                <div className="shimmer-bar w-8 h-8 rounded-full flex-shrink-0" />
+                <div className="shimmer-bar h-px w-8 shrink-0" style={{ background: "var(--border-default)" }} />
+                <div className="shimmer-bar w-8 h-8 rounded-full shrink-0" />
                 <div className="shimmer-bar h-3 flex-1 rounded-full" />
               </div>
               <div className="flex items-center gap-4 pl-12">
-                <div className="shimmer-bar h-px w-8 flex-shrink-0" style={{ background: "var(--border-default)" }} />
-                <div className="shimmer-bar w-8 h-8 rounded-full flex-shrink-0" />
+                <div className="shimmer-bar h-px w-8 shrink-0" style={{ background: "var(--border-default)" }} />
+                <div className="shimmer-bar w-8 h-8 rounded-full shrink-0" />
                 <div className="shimmer-bar h-3 w-1/2 rounded-full" />
               </div>
             </div>
@@ -323,12 +325,12 @@ export default function Home() {
                   className="glass-card p-5 flex items-center gap-5"
                   style={{ borderLeft: "4px solid var(--border-default)" }}
                 >
-                  <div className="shimmer-bar w-10 h-10 rounded-full flex-shrink-0" />
+                  <div className="shimmer-bar w-10 h-10 rounded-full shrink-0" />
                   <div className="flex-1 space-y-3">
                     <div className={`shimmer-bar h-4 ${widths.w1} rounded-full`} />
                     <div className={`shimmer-bar h-3 ${widths.w2} rounded-full`} />
                   </div>
-                  <div className="shimmer-bar w-14 h-6 rounded-full flex-shrink-0" />
+                  <div className="shimmer-bar w-14 h-6 rounded-full shrink-0" />
                 </div>
               ))}
             </div>
@@ -336,7 +338,7 @@ export default function Home() {
         </div>
 
         {/* Live Sentinel Logs */}
-        <div className="xl:col-span-1 h-[600px]">
+        <div className="xl:col-span-1 h-150">
           <SimulatedLogs />
         </div>
       </div>

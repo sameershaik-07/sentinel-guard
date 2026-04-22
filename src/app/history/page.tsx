@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { Clock, Download, ShieldAlert, Globe, Activity, Loader2, ArrowRight } from "lucide-react";
+import { apiUrl } from "@/lib/runtime-config";
 
 interface ScanHistory {
   id: string; // The database id is usually a string UUID
   target_url: string;
   score: string;
   score_percentage: number;
-  vulnerabilities: any[];
+  vulnerabilities: unknown[];
   timestamp: string;
 }
 
@@ -21,25 +22,29 @@ export default function HistoryPage() {
   const fetchHistory = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:8000/api/history");
+      const res = await fetch(apiUrl("/api/history"));
       if (!res.ok) throw new Error("Failed to fetch scan history");
       const data = await res.json();
       setHistory(data);
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchHistory();
+    const timer = window.setTimeout(() => {
+      void fetchHistory();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleDownloadPDF = async (scanId: string, url: string) => {
     try {
       setDownloadingId(scanId);
-      const res = await fetch(`http://localhost:8000/api/report/${scanId}`);
+      const res = await fetch(apiUrl(`/api/report/${scanId}`));
       if (!res.ok) throw new Error("Report generation failed");
       
       const blob = await res.blob();
@@ -161,7 +166,7 @@ export default function HistoryPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2" style={{ color: "var(--cyan-400)" }}>
                       <Globe className="w-4 h-4" />
-                      <span className="font-semibold truncate max-w-[200px] md:max-w-xs">{scan.target_url}</span>
+                      <span className="font-semibold truncate max-w-50 md:max-w-xs">{scan.target_url}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md" style={{ background: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
                       <Clock className="w-3 h-3" />

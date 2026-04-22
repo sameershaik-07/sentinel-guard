@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 import { Search, Loader2, Zap } from "lucide-react";
+import { wsUrl } from "@/lib/runtime-config";
+import type { ScanResult } from "@/types/scan";
+
+interface Props {
+  onScanStart: () => void;
+  onScanComplete: (data: ScanResult) => void;
+  onError: (message: string) => void;
+}
 
 // Validate URL before scanning
 function isValidUrl(raw: string): boolean {
@@ -14,7 +22,7 @@ function isValidUrl(raw: string): boolean {
   }
 }
 
-export default function UrlForm({ onScanStart, onScanComplete, onError }: any) {
+export default function UrlForm({ onScanStart, onScanComplete, onError }: Props) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [scanStatus, setScanStatus] = useState("");
@@ -49,7 +57,7 @@ export default function UrlForm({ onScanStart, onScanComplete, onError }: any) {
     }
 
     try {
-      const ws = new WebSocket("ws://localhost:8000/ws/scan");
+      const ws = new WebSocket(wsUrl("/ws/scan"));
 
       ws.onopen = () => {
         ws.send(JSON.stringify({ target_url: targetUrl }));
@@ -77,15 +85,15 @@ export default function UrlForm({ onScanStart, onScanComplete, onError }: any) {
         }
       };
 
-      ws.onerror = (error) => {
+      ws.onerror = () => {
         onError("WebSocket error occurred.");
         setLoading(false);
         setScanStatus("");
         ws.close();
       };
       
-    } catch (err: any) {
-      onError(err.message || "An unknown error occurred.");
+    } catch (err: unknown) {
+      onError(err instanceof Error ? err.message : "An unknown error occurred.");
       setLoading(false);
       setScanStatus("");
     }
@@ -121,7 +129,7 @@ export default function UrlForm({ onScanStart, onScanComplete, onError }: any) {
         {/* Input + Button row */}
         <div className="flex flex-col sm:flex-row gap-4 mb-4">
 
-          {/* Step 4.2 — Input with animated focus ring (.url-input) */}
+            {/* Step 4.2 — Input with animated focus ring (.url-input) */}
           <div className="relative flex-1">
             {/* Leading icon */}
             <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
