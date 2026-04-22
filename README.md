@@ -1,117 +1,151 @@
 # Sentinel-Guard
 
-Sentinel-Guard is a full-stack cloud security audit platform that scans a target URL, detects common vulnerabilities, scores security posture, and generates visual + PDF executive reports.
+Sentinel-Guard is an AI-assisted cloud security auditing platform designed to help teams quickly evaluate a web target, understand exposure, and act on remediation with confidence.
 
-It includes:
-- A Next.js dashboard for running scans and viewing history
-- A FastAPI backend for scanning, scoring, logs, reports, and WebSocket streaming
-- Optional Azure Cosmos DB persistence
-- Optional Google Gemini remediation assistance
-- Attack surface visualization (React Flow + Mermaid)
+It combines real-time scanning, security scoring, attack path visualization, and downloadable executive reporting in one end-to-end workflow.
 
 ## Table of Contents
 
-- [What It Does](#what-it-does)
+- [Project Overview](#project-overview)
+- [How Sentinel-Guard Helps](#how-sentinel-guard-helps)
+- [Core Capabilities](#core-capabilities)
+- [User Journey](#user-journey)
+- [Technology Stack](#technology-stack)
 - [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Repository Structure](#repository-structure)
-- [Prerequisites](#prerequisites)
-- [Quick Start (Local)](#quick-start-local)
-- [How to Access the App](#how-to-access-the-app)
+- [Repository Layout](#repository-layout)
+- [Local Setup](#local-setup)
+- [How to Access Locally](#how-to-access-locally)
 - [Environment Variables](#environment-variables)
-- [Backend API Reference](#backend-api-reference)
-- [How a Scan Works](#how-a-scan-works)
+- [API Reference](#api-reference)
 - [Development Commands](#development-commands)
-- [Troubleshooting](#troubleshooting)
-- [Security Notes](#security-notes)
-- [Known Project Quirks](#known-project-quirks)
 
-## What It Does
+## Project Overview
 
-Sentinel-Guard performs a multi-step security scan for a target website:
+Sentinel-Guard scans a target URL and provides a complete security intelligence package:
 
-1. HTTP security header checks
-2. SSL/TLS checks (invalid, expired, expiring certs)
-3. Lightweight public port exposure checks
-4. Passive recon (tech stack fingerprinting + subdomain intel)
-5. Score calculation (A-F + percentage)
-6. AI remediation suggestions (optional)
-7. Visual attack path generation (Mermaid and React Flow)
-8. Executive PDF report generation
+- Vulnerability detection across headers, TLS posture, and network exposure
+- Security grading with both letter score and numeric percentage
+- AI-generated remediation guidance
+- Attack surface and lateral movement visualization
+- Recon intelligence (technology fingerprinting and subdomains)
+- Executive PDF report generation
+- Historical scan archive and SIEM-style activity feed
+
+This makes it useful for demos, internal security reviews, client reporting, and rapid first-pass risk assessment.
+
+## How Sentinel-Guard Helps
+
+Sentinel-Guard helps by turning raw findings into actionable outcomes:
+
+- Faster triage: critical findings are surfaced immediately with severity context
+- Better communication: visual maps and PDF reports make findings easy to present
+- More practical fixes: AI remediation provides implementation-oriented guidance
+- Continuous visibility: scan history and logs create a living security timeline
+- Team alignment: one dashboard for engineering, security, and stakeholders
+
+## Core Capabilities
+
+1. URL-based audit execution from a web dashboard
+2. Real-time scan progress over WebSocket
+3. Header security validation:
+   - Strict-Transport-Security
+   - Content-Security-Policy
+   - X-Frame-Options
+   - X-Content-Type-Options
+4. SSL/TLS checks:
+   - HTTPS usage
+   - Certificate trust and validity
+   - Expiration risk window
+5. Lightweight port exposure checks:
+   - 22, 80, 443, 3306, 3389
+6. Passive reconnaissance:
+   - Tech stack hints from headers/content
+   - Subdomains from certificate transparency data
+7. Score engine:
+   - 0 to 100 percentage
+   - Letter grade from A to F
+8. AI remediation assistant (optional key)
+9. Attack map generation in Mermaid and React Flow graph JSON
+10. Executive report download as PDF
+
+## User Journey
+
+1. Open dashboard and enter a target URL.
+2. Launch scan and monitor live feed in the UI.
+3. Review score, vulnerabilities, and intelligence details.
+4. Explore attack topology in interactive and diagram views.
+5. Download executive report PDF.
+6. Visit history page to review prior scans and download reports again.
+
+## Technology Stack
+
+### Frontend
+
+- Next.js 16.2.4 (App Router)
+- React 19.2.4
+- TypeScript
+- Tailwind CSS v4
+- @xyflow/react + dagre (interactive graph rendering and layout)
+- Mermaid (diagram syntax rendering)
+- lucide-react (UI icons)
+
+### Backend
+
+- Python
+- FastAPI
+- Uvicorn
+- Pydantic
+- requests, websockets, cryptography
+- Report generation with WeasyPrint and ReportLab fallback
+
+### Cloud and Integrations
+
+- Azure Cosmos DB (scan persistence)
+- Azure Sentinel APIs (alert enrichment)
+- Google Gemini via google-generativeai (AI remediation)
+- Kroki (Mermaid diagram to image for reporting)
 
 ## Architecture
 
-High-level request flow:
+High-level flow:
 
-1. User submits URL in frontend dashboard.
-2. Frontend opens `ws://.../ws/scan` (or `wss://`) to backend.
-3. Backend runs scanners and streams progress updates.
-4. Backend returns final result payload (score, vulnerabilities, maps, recon, remediation).
-5. Frontend renders scorecards, vulnerability list, topology map, and logs.
-6. User can download PDF report and view historical scans.
+1. Frontend sends target URL to backend WebSocket endpoint.
+2. Backend executes scanner pipeline and streams progress events.
+3. Backend computes score, generates remediation, recon data, and map artifacts.
+4. Backend stores scan metadata and findings.
+5. Frontend renders scorecards, logs, findings, intelligence, and maps.
+6. PDF report endpoint produces downloadable executive output.
 
-## Tech Stack
+Primary backend modules:
 
-Frontend:
-- Next.js `16.2.4` (App Router)
-- React `19.2.4`
-- TypeScript
-- Tailwind CSS `v4`
-- `@xyflow/react` + `dagre` for interactive graph layout
-- Mermaid for topology diagrams
-- `lucide-react` icons
+- API routes for scan, history, logs, and report
+- Scanner modules for headers, SSL/TLS, ports, and recon
+- Utility modules for database, AI, WebSocket manager, map generation, and PDF generation
 
-Backend:
-- Python + FastAPI
-- Uvicorn
-- Pydantic
-- `requests`, `websockets`, `cryptography`
-- Report generation: ReportLab + optional WeasyPrint
+## Repository Layout
 
-Cloud / Integrations:
-- Azure Cosmos DB (optional persistence)
-- Azure Sentinel API (optional alert enrichment)
-- Google Gemini (`google-generativeai`) for remediation suggestions (optional)
-- Kroki for Mermaid-to-image rendering in PDF
+Key directories:
 
-## Repository Structure
+- backend/
+  - FastAPI application, scanner pipeline, models, and reporting utilities
+- frontend/
+  - Next.js dashboard and history UI
 
-Important folders:
+Primary entry points:
 
-- `backend/` FastAPI API, scanners, data/model utilities, reporting
-- `frontend/` Next.js UI (recommended frontend workspace)
-- `src/` duplicate frontend source tree also exists at repo root
+- backend/main.py
+- backend/api/scan.py
+- frontend/src/app/page.tsx
+- frontend/src/app/history/page.tsx
 
-Backend highlights:
-- `backend/main.py` app entry, CORS, router registration, WebSocket scan endpoint
-- `backend/api/scan.py` synchronous scan endpoint and scoring logic
-- `backend/api/history.py` scan history endpoint
-- `backend/api/logs.py` SIEM-style logs endpoint
-- `backend/api/report.py` PDF endpoint
-- `backend/scanners/*` header/SSL/port/recon scanning modules
-- `backend/utils/db.py` Cosmos DB integration
-- `backend/utils/ai.py` Gemini remediation
-- `backend/utils/mermaid.py` map + graph generation
-- `backend/utils/pdf_gen.py` report creation
+## Local Setup
 
-Frontend highlights:
-- `frontend/src/app/page.tsx` dashboard page
-- `frontend/src/app/history/page.tsx` history page
-- `frontend/src/components/UrlForm.tsx` scan trigger + WebSocket client
-- `frontend/src/lib/runtime-config.ts` API/WS base URL construction
-
-## Prerequisites
+### Prerequisites
 
 - Node.js 20+
 - npm
 - Python 3.10+
 - pip
-
-Optional (for advanced features):
-- Azure account with Cosmos DB and Sentinel workspace
-- Gemini API key
-
-## Quick Start (Local)
 
 ### 1) Start Backend
 
@@ -123,9 +157,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-Backend runs on: `http://localhost:8000`
-
-You can also use:
+Alternative startup script:
 
 ```bash
 cd backend
@@ -140,154 +172,93 @@ npm install
 cp .env.example .env.local
 ```
 
-Edit `.env.local` for local backend:
+Update frontend environment values:
 
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 NEXT_PUBLIC_WS_BASE_URL=ws://localhost:8000
 ```
 
-Run dev server:
+Run frontend:
 
 ```bash
 npm run dev
 ```
 
-Frontend runs on: `http://localhost:3000`
-
-## How to Access the App
+## How to Access Locally
 
 After both services are running:
 
-- Dashboard UI: `http://localhost:3000`
-- History page: `http://localhost:3000/history`
-- Backend health: `http://localhost:8000/`
-- Backend Swagger docs: `http://localhost:8000/docs`
-- Backend ReDoc: `http://localhost:8000/redoc`
-
-How to use:
-
-1. Open dashboard (`/`).
-2. Enter target URL and click **Run Audit**.
-3. Watch live scan feed and progress.
-4. Review score, vulnerabilities, recon intel, and attack map.
-5. Download executive PDF.
-6. Open `/history` to view archived scans and download reports again.
+- Dashboard: http://localhost:3000
+- History: http://localhost:3000/history
+- Backend root health: http://localhost:8000/
+- Backend Swagger docs: http://localhost:8000/docs
+- Backend ReDoc docs: http://localhost:8000/redoc
 
 ## Environment Variables
 
-Backend (`backend/.env`):
+Backend (backend/.env):
 
 ```env
 COSMOS_ENDPOINT=
 COSMOS_KEY=
 GEMINI_API_KEY=
-AZURE_SUBSCRIPTION_ID=
-AZURE_RESOURCE_GROUP=
-AZURE_WORKSPACE_NAME=
 ```
 
-Frontend (`frontend/.env.local`):
+Frontend (frontend/.env.local):
 
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 NEXT_PUBLIC_WS_BASE_URL=ws://localhost:8000
 ```
 
-Notes:
-- If Cosmos is not configured, backend falls back to memory mode for persistence-related operations.
-- If Gemini key is missing, AI remediation returns a graceful fallback message.
-- If frontend API/WS env vars are not set, calls can default to wrong host/port in local setups.
+## API Reference
 
-## Backend API Reference
-
-Base URL: `http://localhost:8000`
+Base URL: http://localhost:8000
 
 ### HTTP Endpoints
 
-- `GET /`
-	- Health/status check.
+- GET /
+  - Service status endpoint
 
-- `POST /api/scan`
-	- Runs a scan and returns full result payload.
-	- Request body:
+- POST /api/scan
+  - Execute scan and return complete result object
+  - Request body:
 
 ```json
 {
-	"target_url": "https://example.com"
+  "target_url": "https://example.com"
 }
 ```
 
-- `GET /api/history`
-	- Returns previous scans (when stored in Cosmos DB).
+- GET /api/history
+  - Return stored scan records
 
-- `GET /api/logs`
-	- Returns SIEM-style logs derived from scan history.
+- GET /api/logs
+  - Return SIEM-style log feed
 
-- `GET /api/report/{scan_id}`
-	- Streams downloadable executive PDF for a scan id.
+- GET /api/report/{scan_id}
+  - Generate and download executive report PDF
 
-### WebSocket
+### WebSocket Endpoint
 
-- `WS /ws/scan`
-	- Send:
+- WS /ws/scan
+  - Send payload:
 
 ```json
-{ "target_url": "https://example.com" }
+{
+  "target_url": "https://example.com"
+}
 ```
 
-	- Receive progress events (`type: info`) and final result (`type: result`) or error (`type: error`).
-
-## How a Scan Works
-
-### Security checks
-
-- Header scanner checks:
-	- Strict-Transport-Security
-	- Content-Security-Policy
-	- X-Frame-Options
-	- X-Content-Type-Options
-
-- SSL scanner checks:
-	- HTTP vs HTTPS usage
-	- certificate validity
-	- expiration window
-	- handshake/cert failures
-
-- Port scanner checks:
-	- 22 (SSH)
-	- 80 (HTTP)
-	- 443 (HTTPS)
-	- 3306 (MySQL)
-	- 3389 (RDP)
-
-### Score model
-
-Initial score = 100.
-
-Severity deductions:
-- Critical: `-50`
-- High: `-20`
-- Medium: `-10`
-- Low: `-5`
-
-Final grade:
-- A: `>= 90`
-- B: `>= 80`
-- C: `>= 70`
-- D: `>= 60`
-- F: `< 60`
-
-### Intelligence + Reporting
-
-- Passive recon detects probable stack signatures and subdomains from cert transparency.
-- AI remediation proposes context-aware fixes when key is configured.
-- Attack map is generated in Mermaid + React Flow JSON.
-- PDF report includes summary, findings, recon, remediation, and topology artifact.
+  - Receive:
+    - info events for scan progress
+    - result event with final payload
+    - error event when applicable
 
 ## Development Commands
 
-Frontend (`frontend/`):
+Frontend (frontend/):
 
 ```bash
 npm run dev
@@ -296,55 +267,14 @@ npm run start
 npm run lint
 ```
 
-Backend (`backend/`):
+Backend (backend/):
 
 ```bash
 uvicorn main:app --reload --port 8000
 ```
 
-Repo helper test script:
+Optional repo helper script:
 
 ```bash
 ./test.sh
 ```
-
-## Troubleshooting
-
-- Frontend shows no data / logs:
-	- Confirm backend is running on port `8000`.
-	- Confirm `NEXT_PUBLIC_API_BASE_URL` and `NEXT_PUBLIC_WS_BASE_URL` are set in `frontend/.env.local`.
-
-- WebSocket errors during scan:
-	- Verify `ws://localhost:8000/ws/scan` is reachable.
-	- Check backend console for scanner exceptions.
-
-- PDF generation issues:
-	- WeasyPrint may require native system packages. The app falls back to ReportLab PDF automatically.
-
-- History is empty:
-	- Cosmos DB is optional. Without valid Cosmos settings, history persistence is limited/fallback.
-
-## Security Notes
-
-- CORS is currently configured as open (`allow_origins=["*"]`) for MVP/dev convenience.
-- Harden before production:
-	- restrict CORS origins
-	- add authentication and rate limiting
-	- add request validation hardening and tighter timeouts
-	- avoid insecure HTTP calls in recon flows
-
-## Known Project Quirks
-
-- There are duplicate frontend trees in repo root and in `frontend/`.
-- There are duplicate frontend config files in root and `frontend/`.
-- Recommended active frontend workspace is `frontend/` to avoid ambiguity.
-
----
-
-If you want, this README can be split into:
-- `README.md` (quick start)
-- `docs/ARCHITECTURE.md`
-- `docs/API.md`
-- `docs/DEPLOYMENT.md`
-
-for easier team maintenance.
