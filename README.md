@@ -15,6 +15,7 @@ It combines real-time scanning, security scoring, attack path visualization, and
 - [Repository Layout](#repository-layout)
 - [Local Setup](#local-setup)
 - [How to Access Locally](#how-to-access-locally)
+- [Deployment](#deployment)
 - [Environment Variables](#environment-variables)
 - [API Reference](#api-reference)
 - [Development Commands](#development-commands)
@@ -194,6 +195,15 @@ After both services are running:
 - Backend root health: http://localhost:8000/
 - Backend Swagger docs: http://localhost:8000/docs
 - Backend ReDoc docs: http://localhost:8000/redoc
+
+## Deployment
+
+Sentinel-Guard is deployed using:
+
+- Vercel for the frontend (Next.js application)
+- Railway for the backend (FastAPI API and WebSocket services)
+
+This deployment model keeps the UI globally accessible while maintaining a dedicated backend runtime for scanning, reporting, and real-time updates.
 
 ## Environment Variables
 
