@@ -213,6 +213,11 @@ Backend (backend/.env):
 COSMOS_ENDPOINT=
 COSMOS_KEY=
 GEMINI_API_KEY=
+# Optional: preferred multi-key format for failover
+GEMINI_API_KEYS=key_one,key_two,key_three
+# Optional alternate format
+# GEMINI_API_KEY_1=
+# GEMINI_API_KEY_2=
 ```
 
 Frontend (frontend/.env.local):
@@ -286,5 +291,5 @@ uvicorn main:app --reload --port 8000
 Optional repo helper script:
 
 ```bash
-./test.sh
+./tests/test.sh
 ```
