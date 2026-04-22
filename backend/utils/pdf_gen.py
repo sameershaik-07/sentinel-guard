@@ -5,7 +5,7 @@ import zlib
 import requests
 import markdown
 from datetime import datetime
-from weasyprint import HTML
+from reportlab.pdfgen import canvas
 
 def markdown_to_html(text: str) -> str:
     if not isinstance(text, str):
@@ -25,6 +25,55 @@ def get_kroki_png(mermaid_str: str) -> str:
     except Exception as e:
         print(f"Kroki error: {e}")
     return "<div class='error-box'>[!] DIAGRAM RENDER FAILURE - SECURE TUNNEL ABORTED</div>"
+
+
+def generate_fallback_report(scan_data: dict) -> io.BytesIO:
+    """Generate a minimal PDF when WeasyPrint system libraries are unavailable."""
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer)
+    y = 800
+
+    target_url = scan_data.get("target_url", "Unknown target")
+    score = scan_data.get("score", "N/A")
+    score_pct = scan_data.get("score_percentage", 0)
+    vulns = scan_data.get("vulnerabilities", []) or []
+
+    pdf.setTitle("Sentinel-Guard Executive Report")
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(40, y, "Sentinel-Guard Executive Report")
+    y -= 24
+
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(40, y, f"Target: {target_url}")
+    y -= 16
+    pdf.drawString(40, y, f"Score: {score} ({score_pct}/100)")
+    y -= 16
+    pdf.drawString(40, y, f"Generated: {datetime.utcnow().isoformat()}Z")
+    y -= 24
+
+    pdf.setFont("Helvetica-Bold", 11)
+    pdf.drawString(40, y, "Vulnerabilities")
+    y -= 16
+    pdf.setFont("Helvetica", 9)
+
+    if not vulns:
+      pdf.drawString(40, y, "No vulnerabilities detected.")
+      y -= 14
+    else:
+        for idx, vuln in enumerate(vulns, start=1):
+            name = str(vuln.get("name", "Unknown"))[:90]
+            severity = str(vuln.get("severity", "Unknown"))
+            line = f"{idx}. [{severity}] {name}"
+            pdf.drawString(40, y, line)
+            y -= 14
+            if y < 60:
+                pdf.showPage()
+                pdf.setFont("Helvetica", 9)
+                y = 800
+
+    pdf.save()
+    buffer.seek(0)
+    return buffer
 
 def generate_report(scan_data: dict) -> io.BytesIO:
     target_url = scan_data.get("target_url", "https://unknown.target")
@@ -434,9 +483,14 @@ def generate_report(scan_data: dict) -> io.BytesIO:
     </html>
     """
 
-    # Generate PDF via WeasyPrint
-    pdf_buffer = io.BytesIO()
-    HTML(string=html_content).write_pdf(target=pdf_buffer)
-    pdf_buffer.seek(0)
-    
-    return pdf_buffer
+    # Defer WeasyPrint import so missing native libs don't crash app startup.
+    try:
+        from weasyprint import HTML
+
+        pdf_buffer = io.BytesIO()
+        HTML(string=html_content).write_pdf(target=pdf_buffer)
+        pdf_buffer.seek(0)
+        return pdf_buffer
+    except Exception as e:
+        print(f"WeasyPrint unavailable, using fallback PDF renderer: {e}")
+        return generate_fallback_report(scan_data)
