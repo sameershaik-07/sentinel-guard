@@ -47,9 +47,10 @@ def init_db():
     except Exception as e:
         print(f"❌ Initialization Error: {str(e)}")
 
-def save_scan_result(target_url: str, score: str, score_percentage: int, vulnerabilities: list, ai_remediation: str = None, mermaid_syntax: str = None, recon_data: dict = None):
+def save_scan_result(target_url: str, score: str, score_percentage: int, vulnerabilities: list, ai_remediation: str = None, mermaid_syntax: str = None, recon_data: dict = None, findings_summary: dict = None, error_log: list = None):
     """
     Saves a completed scan directly into the Azure Cosmos DB cluster.
+    Accepts optional `findings_summary` and `error_log` to store analysis metadata.
     """
     timestamp = datetime.utcnow().isoformat() + "Z"
     scan_document = {
@@ -61,13 +62,16 @@ def save_scan_result(target_url: str, score: str, score_percentage: int, vulnera
         "ai_remediation": ai_remediation,
         "mermaid_syntax": mermaid_syntax,
         "recon_data": recon_data or {},
+        "findings_summary": findings_summary or {},
+        "error_log": error_log or [],
         "timestamp": timestamp
     }
-    
+
+    # If container is not configured, return the generated ID so the app can continue.
     if container is None:
         print("Azure fallback: Scan not saved (No Cosmos DB configured).")
         return scan_document["id"]
-    
+
     try:
         container.create_item(body=scan_document)
         print(f"Saved {target_url} to Cosmos DB!")

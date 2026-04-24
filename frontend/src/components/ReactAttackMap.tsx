@@ -245,7 +245,7 @@ function ReactAttackMapInner({ graphData }: { graphData: GraphData }) {
           <button
             type="button"
             onClick={() => setIsExpanded(true)}
-            className="shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide transition-colors bg-cyan-500/10 text-cyan-300 border border-cyan-400/20 hover:bg-cyan-500/15"
+            className="btn shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide transition-colors bg-cyan-500/10 text-cyan-300 border border-cyan-400/20 hover:bg-cyan-500/15"
             aria-label="Expand interactive attack surface to full page"
           >
             <span className="text-sm leading-none">⤢</span>
@@ -285,7 +285,7 @@ function ReactAttackMapInner({ graphData }: { graphData: GraphData }) {
             <button
               type="button"
               onClick={() => setIsExpanded(false)}
-              className="shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide transition-colors bg-rose-500/10 text-rose-300 border border-rose-400/20 hover:bg-rose-500/15"
+                className="btn shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide transition-colors bg-rose-500/10 text-rose-300 border border-rose-400/20 hover:bg-rose-500/15"
               aria-label="Close expanded interactive attack surface"
             >
               <span className="text-sm leading-none">×</span>

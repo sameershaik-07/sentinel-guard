@@ -188,7 +188,7 @@ export default function UrlForm({ onScanStart, onScanComplete, onError }: Props)
             <button
               type="button"
               onClick={() => setShowLiveFeed(!showLiveFeed)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold font-mono transition-all"
+              className="btn flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold font-mono transition-all"
               style={{
                 color: showLiveFeed ? "var(--cyan-400)" : "var(--text-muted)",
                 background: showLiveFeed ? "rgba(6,182,212,0.08)" : "transparent",

@@ -399,6 +399,27 @@ body > *:not(.app-glow-layer):not(.app-grid-layer) {
   z-index: -1;
 }
 
+
+/* Make sure interactive controls show a pointer cursor */
+button,
+input[type="button"],
+input[type="submit"],
+a,
+[role="button"],
+.btn {
+  cursor: pointer;
+}
+
+/* Disabled controls should show not-allowed */
+button:disabled,
+input[disabled],
+[disabled],
+button[disabled],
+a[aria-disabled="true"],
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 /* Step 4.2 — Input focus glow */
 .url-input {
   width: 100%;
@@ -599,4 +620,41 @@ body > *:not(.app-glow-layer):not(.app-grid-layer) {
 .btn-jump-latest:hover {
   background: rgba(6, 182, 212, 0.20);
   box-shadow: var(--glow-cyan);
+}
+
+/* AI remediation: prevent external libs (KaTeX/mermaid) from adding text-shadow */
+.ai-remediation,
+.ai-remediation * {
+  text-shadow: none !important;
+  -webkit-text-shadow: none !important;
+}
+
+/* Prevent code blocks inside AI remediation from carrying heavy backgrounds or shadows */
+.ai-remediation pre,
+.ai-remediation code,
+.ai-remediation .react-syntax-highlighter,
+.ai-remediation .react-syntax-highlighter * {
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  border: none !important;
+}
+
+/* Ensure code inside AI remediation wraps and doesn't overflow */
+.ai-remediation .react-syntax-container,
+.ai-remediation pre,
+.ai-remediation code,
+.ai-remediation .react-syntax-highlighter {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure React Flow node handles are clickable and show pointer when visible */
+.react-flow__node.selectable { cursor: pointer !important; }
+.react-flow__handle:not(.opacity-0) {
+  pointer-events: all !important;
+  cursor: pointer !important;
 }

@@ -4,8 +4,11 @@ import base64
 import zlib
 import requests
 import markdown
+import textwrap
 from datetime import datetime
 from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+from reportlab.lib.pagesizes import A4, landscape
 
 def markdown_to_html(text: str) -> str:
     if not isinstance(text, str):
@@ -30,46 +33,143 @@ def get_kroki_png(mermaid_str: str) -> str:
 def generate_fallback_report(scan_data: dict) -> io.BytesIO:
     """Generate a minimal PDF when WeasyPrint system libraries are unavailable."""
     buffer = io.BytesIO()
-    pdf = canvas.Canvas(buffer)
-    y = 800
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    page_width, page_height = A4
+    left_margin = 40
+    right_margin = page_width - 40
+    y = page_height - 40
 
     target_url = scan_data.get("target_url", "Unknown target")
     score = scan_data.get("score", "N/A")
     score_pct = scan_data.get("score_percentage", 0)
     vulns = scan_data.get("vulnerabilities", []) or []
+    ai_remediation = scan_data.get("ai_remediation", "") or ""
+    recon_data = scan_data.get("recon_data", {}) or {}
+    tech_stack = recon_data.get("tech_stack", []) if isinstance(recon_data, dict) else []
+    subdomains = recon_data.get("subdomains", []) if isinstance(recon_data, dict) else []
 
     pdf.setTitle("Sentinel-Guard Executive Report")
-    pdf.setFont("Helvetica-Bold", 14)
-    pdf.drawString(40, y, "Sentinel-Guard Executive Report")
-    y -= 24
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(left_margin, y, "Sentinel-Guard Executive Report")
+    y -= 26
 
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(left_margin, y, f"Target: {target_url}")
     pdf.setFont("Helvetica", 10)
-    pdf.drawString(40, y, f"Target: {target_url}")
-    y -= 16
-    pdf.drawString(40, y, f"Score: {score} ({score_pct}/100)")
-    y -= 16
-    pdf.drawString(40, y, f"Generated: {datetime.utcnow().isoformat()}Z")
-    y -= 24
+    pdf.drawRightString(right_margin, page_height - 40, f"Generated: {datetime.utcnow().isoformat()}Z")
+    y -= 20
 
-    pdf.setFont("Helvetica-Bold", 11)
-    pdf.drawString(40, y, "Vulnerabilities")
+    # Score box
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(left_margin, y, f"Security Score: {score}  ({score_pct}/100)")
+    y -= 20
+
+    # OSINT summary
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(left_margin, y, "Target Intelligence (OSINT)")
     y -= 16
     pdf.setFont("Helvetica", 9)
-
-    if not vulns:
-      pdf.drawString(40, y, "No vulnerabilities detected.")
-      y -= 14
-    else:
-        for idx, vuln in enumerate(vulns, start=1):
-            name = str(vuln.get("name", "Unknown"))[:90]
-            severity = str(vuln.get("severity", "Unknown"))
-            line = f"{idx}. [{severity}] {name}"
-            pdf.drawString(40, y, line)
-            y -= 14
-            if y < 60:
+    tech_str = ", ".join(tech_stack) if tech_stack else "None Detected"
+    pdf.drawString(left_margin, y, f"Tech Stack: {tech_str}")
+    y -= 14
+    if subdomains:
+        pdf.drawString(left_margin, y, "Subdomains:")
+        y -= 14
+        for s in subdomains:
+            pdf.drawString(left_margin + 10, y, f"- {s}")
+            y -= 12
+            if y < 72:
                 pdf.showPage()
                 pdf.setFont("Helvetica", 9)
-                y = 800
+                y = page_height - 40
+    else:
+        pdf.drawString(left_margin, y, "Subdomains: None found")
+        y -= 14
+
+    # Findings & Errors summary (highlight open ports and high/critical)
+    findings = []
+    for v in vulns:
+        name = v.get("name", "") if isinstance(v, dict) else str(v)
+        sev = (v.get("severity", "").upper() if isinstance(v, dict) else "")
+        if "port" in name.lower() or sev in ("HIGH", "CRITICAL"):
+            findings.append(f"{name} — {sev}")
+
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(left_margin, y, "Findings & Errors")
+    y -= 16
+    pdf.setFont("Helvetica", 9)
+    if findings:
+        for f in findings:
+            pdf.drawString(left_margin, y, f"- {f}")
+            y -= 12
+            if y < 72:
+                pdf.showPage()
+                pdf.setFont("Helvetica", 9)
+                y = page_height - 40
+    else:
+        pdf.drawString(left_margin, y, "No critical findings detected.")
+        y -= 14
+
+    # Vulnerability list (detailed)
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(left_margin, y, "Vulnerability Details")
+    y -= 14
+    pdf.setFont("Helvetica", 9)
+    if not vulns:
+        pdf.drawString(left_margin, y, "No vulnerabilities detected.")
+        y -= 14
+    else:
+        for idx, vuln in enumerate(vulns, start=1):
+            name = str(vuln.get("name", "Unknown"))[:120]
+            severity = str(vuln.get("severity", "Unknown"))
+            pdf.drawString(left_margin, y, f"{idx}. [{severity}] {name}")
+            y -= 12
+            rem = vuln.get("fix_snippet", "") if isinstance(vuln, dict) else ""
+            if rem:
+                for line in textwrap.wrap(str(rem), width=110):
+                    pdf.drawString(left_margin + 8, y, line)
+                    y -= 11
+                    if y < 72:
+                        pdf.showPage()
+                        pdf.setFont("Helvetica", 9)
+                        y = page_height - 40
+            if y < 72:
+                pdf.showPage()
+                pdf.setFont("Helvetica", 9)
+                y = page_height - 40
+
+    # AI remediation section
+    if ai_remediation:
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(left_margin, y, "AI Analyst Recommendations")
+        y -= 14
+        pdf.setFont("Helvetica", 9)
+        for line in textwrap.wrap(ai_remediation, width=110):
+            pdf.drawString(left_margin, y, line)
+            y -= 11
+            if y < 72:
+                pdf.showPage()
+                pdf.setFont("Helvetica", 9)
+                y = page_height - 40
+
+    # Attempt to include a fullscreen attack map page if mermaid syntax exists
+    mermaid_syntax = scan_data.get("mermaid_syntax")
+    if mermaid_syntax:
+        try:
+            img_html = get_kroki_png(mermaid_syntax)
+            m = re.search(r"data:image\/png;base64,([^'\"]+)", img_html)
+            if m:
+                img_b64 = m.group(1)
+                img_bytes = base64.b64decode(img_b64)
+                img_reader = ImageReader(io.BytesIO(img_bytes))
+                # New landscape page for fullscreen map
+                pdf.showPage()
+                pdf.setPageSize(landscape(A4))
+                lw, lh = landscape(A4)
+                pdf.drawImage(img_reader, 0, 0, width=lw, height=lh)
+        except Exception:
+            # If embedding fails, skip silently
+            pass
 
     pdf.save()
     buffer.seek(0)
@@ -108,6 +208,14 @@ def generate_report(scan_data: dict) -> io.BytesIO:
     # Hack the SVG out of Kroki
     graph_svg = get_kroki_png(mermaid_syntax)
 
+    # Build a full-page map image tag (extract base64 PNG if available)
+    m_full = re.search(r"data:image\/png;base64,([^']+)", graph_svg)
+    if m_full:
+        b64_img = m_full.group(1)
+        full_map_img_tag = f"<img src='data:image/png;base64,{b64_img}' style='width:100%; height:100%; object-fit:contain; display:block;'/>"
+    else:
+        full_map_img_tag = graph_svg
+
     # Make sure text converts correctly for vulnerabilities too
     vuln_html = ""
     if not vulns:
@@ -140,6 +248,18 @@ def generate_report(scan_data: dict) -> io.BytesIO:
     sub_html = "".join([f"<tr><td>Domain</td><td>{s}</td><td>Active</td></tr>" for s in subdomains])
     if not sub_html:
         sub_html = "<tr><td>-</td><td>No subdomains found</td><td>-</td></tr>"
+
+    # Findings summary (highlight open ports and high/critical items)
+    findings = []
+    for v in vulns:
+        name = v.get("name", "") if isinstance(v, dict) else str(v)
+        sev = (v.get("severity", "").upper() if isinstance(v, dict) else "")
+        if "port" in name.lower() or sev in ("HIGH", "CRITICAL"):
+            findings.append(f"{name} — {sev}")
+    if findings:
+        findings_html = "<ul>" + "".join(f"<li>{f}</li>" for f in findings) + "</ul>"
+    else:
+        findings_html = "<p class='text-muted'>No critical findings detected.</p>"
 
     status_color = "text-red" if score in ["D","F"] else "text-green"
     status_text = "AT RISK" if score in ["D","F"] else "SECURE"
@@ -413,6 +533,11 @@ def generate_report(scan_data: dict) -> io.BytesIO:
                 font-size: 9pt;
             }}
 
+            /* Fullscreen map page definition */
+            @page map {{ size: A4 landscape; margin: 10mm; }}
+            .map-page {{ page: map; height: 100%; margin: 0; padding: 0; }}
+            .map-page img {{ width: 100%; height: 100%; object-fit: contain; display: block; }}
+
         </style>
     </head>
     <body>
@@ -444,6 +569,12 @@ def generate_report(scan_data: dict) -> io.BytesIO:
                 </td>
             </tr>
         </table>
+
+        <!-- Findings & Errors -->
+        <div class="section-title">Findings & Errors</div>
+        <div class="analytics-body">
+            {findings_html}
+        </div>
 
         <!-- Segment 6: AI Analytics -->
         <div class="analytics-window">
@@ -477,6 +608,11 @@ def generate_report(scan_data: dict) -> io.BytesIO:
         <div class="section-title" style="page-break-before: always;">Interactive Attack Surface</div>
         <div class="attack-map-container">
             {graph_svg}
+        </div>
+
+        <!-- Fullscreen Attack Map (landscape) -->
+        <div class="map-page" style="page-break-before: always;">
+            {full_map_img_tag}
         </div>
 
     </body>

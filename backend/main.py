@@ -65,22 +65,43 @@ async def websocket_scan_endpoint(websocket: WebSocket):
                     url_str = 'https://' + url_str
                 
                 await manager.send_personal_json({"status": "Starting scan...", "type": "info"}, websocket)
-                
+
+                # Initialize error log to capture any scanner exceptions without aborting
+                error_log = []
+
                 # 1. Run HTTP Security Headers Scan
                 await manager.send_personal_json({"status": "Checking Security Headers...", "type": "info"}, websocket)
                 await asyncio.sleep(0.1) # Yield control to ensure flush
-                header_vulnerabilities = await asyncio.to_thread(check_security_headers, url_str)
-                
+                try:
+                    header_vulnerabilities = await asyncio.to_thread(check_security_headers, url_str)
+                except Exception as e:
+                    header_vulnerabilities = []
+                    err = f"Headers scan failed: {str(e)}"
+                    await manager.send_personal_json({"status": err, "type": "warning"}, websocket)
+                    error_log.append(err)
+
                 # 2. Run SSL/TLS Certificate Scan
                 await manager.send_personal_json({"status": "Checking SSL/TLS Certificates...", "type": "info"}, websocket)
                 await asyncio.sleep(0.1) # Yield control to ensure flush
-                ssl_vulnerabilities = await asyncio.to_thread(check_ssl_certificate, url_str)
-                
+                try:
+                    ssl_vulnerabilities = await asyncio.to_thread(check_ssl_certificate, url_str)
+                except Exception as e:
+                    ssl_vulnerabilities = []
+                    err = f"SSL scan failed: {str(e)}"
+                    await manager.send_personal_json({"status": err, "type": "warning"}, websocket)
+                    error_log.append(err)
+
                 # 3. Run Lightweight Port Scan
                 await manager.send_personal_json({"status": "Discovering Open Ports...", "type": "info"}, websocket)
                 await asyncio.sleep(0.1) # Yield control to ensure flush
-                port_vulnerabilities = await asyncio.to_thread(check_open_ports, url_str)
-                
+                try:
+                    port_vulnerabilities = await asyncio.to_thread(check_open_ports, url_str)
+                except Exception as e:
+                    port_vulnerabilities = []
+                    err = f"Port scan failed: {str(e)}"
+                    await manager.send_personal_json({"status": err, "type": "warning"}, websocket)
+                    error_log.append(err)
+
                 all_vulns = header_vulnerabilities + ssl_vulnerabilities + port_vulnerabilities
                 
                 # 4. Calculate Final Score
@@ -91,29 +112,91 @@ async def websocket_scan_endpoint(websocket: WebSocket):
                 # 4.1 Generate AI Remediation
                 await manager.send_personal_json({"status": "AI Analyst: Generating remediation fixes...", "type": "info"}, websocket)
                 await asyncio.sleep(0.1) # Yield control to ensure flush
-                ai_fix = await asyncio.to_thread(generate_ai_remediation, url_str, all_vulns)
+                try:
+                    ai_fix = await asyncio.to_thread(generate_ai_remediation, url_str, all_vulns)
+                except Exception as e:
+                    ai_fix = "AI remediation generation failed to complete. See error log."
+                    err = f"AI remediation error: {str(e)}"
+                    await manager.send_personal_json({"status": err, "type": "warning"}, websocket)
+                    error_log.append(err)
                 
                 # 4.2 Passive Reconnaissance
                 await manager.send_personal_json({"status": "Reconnaissance: Fingerprinting target and scraping OSINT...", "type": "info"}, websocket)
                 await asyncio.sleep(0.1)
-                recon_data = await asyncio.to_thread(perform_passive_recon, url_str)
+                try:
+                    recon_data = await asyncio.to_thread(perform_passive_recon, url_str)
+                except Exception as e:
+                    recon_data = {}
+                    err = f"Reconnaissance error: {str(e)}"
+                    await manager.send_personal_json({"status": err, "type": "warning"}, websocket)
+                    error_log.append(err)
                 
                 # 5. Generate final data elements before saving
                 await manager.send_personal_json({"status": "Generating Final Report...", "type": "info"}, websocket)
                 await asyncio.sleep(0.1) # Yield control to ensure flush
                 vulnerabilities = [Vulnerability(**v).model_dump() for v in all_vulns]
-                mermaid_str = await asyncio.to_thread(generate_attack_map, url_str, all_vulns)
-                react_graph = await asyncio.to_thread(generate_graph_json, url_str, all_vulns)
-                
+                try:
+                    mermaid_str = await asyncio.to_thread(generate_attack_map, url_str, all_vulns)
+                except Exception as e:
+                    mermaid_str = "graph TD\nLocal-->Firewall\nFirewall-->Internet"
+                    err = f"Attack map generation failed: {str(e)}"
+                    await manager.send_personal_json({"status": err, "type": "warning"}, websocket)
+                    error_log.append(err)
+
+                try:
+                    react_graph = await asyncio.to_thread(generate_graph_json, url_str, all_vulns)
+                except Exception as e:
+                    react_graph = {}
+                    err = f"Graph JSON generation failed: {str(e)}"
+                    await manager.send_personal_json({"status": err, "type": "warning"}, websocket)
+                    error_log.append(err)
+
+                # Build findings summary for storage and reporting
+                severity_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "unknown": 0}
+                top_findings = []
+                open_ports = []
+                for v in all_vulns:
+                    try:
+                        name = v.get("name", "") if isinstance(v, dict) else str(v)
+                        sev = (v.get("severity", "").upper() if isinstance(v, dict) else "")
+                    except Exception:
+                        name = str(v)
+                        sev = ""
+
+                    if "CRITICAL" in sev:
+                        severity_counts["critical"] += 1
+                    elif "HIGH" in sev:
+                        severity_counts["high"] += 1
+                    elif "MEDIUM" in sev:
+                        severity_counts["medium"] += 1
+                    elif "LOW" in sev:
+                        severity_counts["low"] += 1
+                    else:
+                        severity_counts["unknown"] += 1
+
+                    if "port" in name.lower():
+                        open_ports.append(name)
+
+                    if "port" in name.lower() or sev in ("HIGH", "CRITICAL"):
+                        top_findings.append({"name": name, "severity": sev})
+
+                findings_summary = {
+                    "counts": severity_counts,
+                    "top_findings": top_findings,
+                    "open_ports": open_ports
+                }
+
                 scan_id = await asyncio.to_thread(
-                    save_scan_result, 
-                    url_str, 
-                    score_letter, 
-                    score_percentage, 
-                    all_vulns, 
+                    save_scan_result,
+                    url_str,
+                    score_letter,
+                    score_percentage,
+                    all_vulns,
                     ai_remediation=ai_fix,
                     mermaid_syntax=mermaid_str,
-                    recon_data=recon_data
+                    recon_data=recon_data,
+                    findings_summary=findings_summary,
+                    error_log=error_log
                 )
                 
                 await manager.send_personal_json({
